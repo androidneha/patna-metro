@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Patna Metro</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600;1,700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+  <link href="assets/css/main.css" rel="stylesheet">
+  <script>
+    const redLine = ['Danapur Cantonment', 'Saguna Mor', 'RPS Mor', 'Patlipura', 'Rukanpura', 'Raja Bazar', 'Patna Zoo', 'Vikas Bhawan', 'Vidyut Bhawan', 'Patna JUnction', 'CNLU', 'Mithapur', 'Ramakrishna Nagar', 'Jaganpura', 'Khemni Chak'];
+    const blueLine = ['Patna Junction', 'Akashvanio', 'Gandhi Maidan', 'PMCH', 'University', 'Moin-ul-Haq Stadium', 'Rajendra Nagar', 'Malahi Pakri', 'Khemni Chak', 'Bhoothnath', 'Zero Mile', 'New ISBT'];
+    const graph = {
+      "Danapur Cantonment": { "Saguna Mor": 1 },
+      "Saguna Mor": { "Danapur Cantonment": 1, "RPS Mor": 1 },
+      "RPS Mor": { "Saguna Mor": 1, "Patlipura": 1 },
+      "Patlipura": { "RPS Mor": 1, "Rukanpura": 1 },
+      "Rukanpura": { "Patlipura": 1, "Raja Bazar": 1 },
+      "Raja Bazar": { "Rukanpura": 1, "Patna Zoo": 1 },
+      "Patna Zoo": { "Raja Bazar": 1, "Vikas Bhawan": 1 },
+      "Vikas Bhawan": { "Patna Zoo": 1, "Vidyut Bhawan": 1 },
+      "Vidyut Bhawan": { "Vikas Bhawan": 1, "Patna Junction": 1 },
+      "Patna Junction": { "Vidyut Bhawan": 1, "CNLU": 1, "Akashvanio": 1 },
+      "CNLU": { "Patna Junction": 1, "Mithapur": 1 },
+      "Mithapur": { "CNLU": 1, "Ramakrishna Nagar": 1 },
+      "Ramakrishna Nagar": { "Mithapur": 1, "Jaganpura": 1 },
+      "Jaganpura": { "Ramakrishna Nagar": 1, "Khemni Chak": 1 },
+      "Khemni Chak": { "Jaganpura": 1, "Bhoothnath": 1, "Malahi Pakri": 1 },
+      "Bhoothnath": { "Khemni Chak": 1, "Zero Mile": 1 },
+      "Zero Mile": { "Bhoothnath": 1, "New ISBT": 1 },
+      "Akashvanio": { "Patna Junction": 1, "Gandhi Maidan": 1 },
+      "Gandhi Maidan": { "Akashvanio": 1, "PMCH": 1 },
+      "PMCH": { "Gandhi Maidan": 1, "University": 1 },
+      "University": { "PMCH": 1, "Moin-ul-Haq Stadium": 1 },
+      "Moin-ul-Haq Stadium": { "University": 1, "Rajendra Nagar": 1 },
+      "Rajendra Nagar": { "Moin-ul-Haq Stadium": 1, "Malahi Pakri": 1 },
+      "Malahi Pakri": { "Rajendra Nagar": 1, "Khemni Chak": 1 },
+      "New ISBT": { "Zero Mile": 1 }
+    };
+    
+    const routeColors = {
+      "red": redLine,
+      "blue": blueLine
+    };
+
+    function findColor(station) {
+      for (let color in routeColors) {
+        if (routeColors[color].includes(station)) {
+          return color;
+        }
+      }
+      return null;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const allStation = [...new Set(redLine.concat(blueLine))].sort();
+      allStation.forEach((value) => {
+        const option = document.createElement("option");
+        option.text = value;
+        option.value = value;
+        document.getElementById("fromStation").appendChild(option);
+      });
+
+      allStation.forEach((value) => {
+        const option = document.createElement("option");
+        option.text = value;
+        option.value = value;
+        document.getElementById("toStation").appendChild(option);
+      });
+      const form = document.getElementById("findRoutes");
+      form.addEventListener("submit", getRoutes);
+
+      const queryString = window.location.search;
+      const searchParams = new URLSearchParams(queryString);
+      const from = searchParams.get('from');
+      const to = searchParams.get('to');
+
+      if (from && to) {
+        document.getElementById("fromStation").value = from
+        document.getElementById("toStation").value = to
+        getRoutes()
+      }
+
+    });
+
+    function getRoutes(e) {
+      if (e) {
+        e.preventDefault();
+      }
+      let startStation = document.getElementById('fromStation').value, endStation = document.getElementById('toStation').value
+      const path = dijkstra(graph, startStation, endStation);
+
+      if (path) {
+        const ul =document.getElementById('routesList')
+        while (ul.firstChild) {
+          ul.removeChild(ul.firstChild);
+        }
+        const li = document.createElement("li");
+        li.textContent = startStation;
+        li.setAttribute("class", `list-group-item completed ${findColor(startStation)}`);
+        ul.appendChild(li);
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentStation = path[i];
+          const nextStation = path[i + 1];
+          const color = findColor(currentStation);
+          console.log(`- ${currentStation} (${color} line) ->`);
+          if (i === path.length - 2) {
+            console.log(`- ${nextStation} (${findColor(nextStation)} line)`);
+          }
+          const li = document.createElement("li");
+          li.textContent = nextStation;
+          li.setAttribute("class", `list-group-item completed ${findColor(nextStation)}`);
+          ul.appendChild(li);
+          document.getElementById('info').innerHTML = `😊 Route found from ${startStation} to ${endStation}`
+        }
+      } else {
+        alert("No path found.");
+      }
+    }
+    function dijkstra(graph, start, end) {
+      const nodes = Object.keys(graph);
+      const visited = {};
+      const distances = {};
+      const path = {};
+      let minNode;
+
+      nodes.forEach(node => {
+        distances[node] = Infinity;
+        path[node] = null;
+      });
+      distances[start] = 0;
+      while (nodes.length !== 0) {
+        minNode = nodes.reduce((min, node) => (distances[node] < distances[min] ? node : min), nodes[0]);
+        nodes.splice(nodes.indexOf(minNode), 1);
+        if (minNode === end) {
+          let pathNodes = [];
+          while (path[minNode]) {
+            pathNodes.push(minNode);
+            minNode = path[minNode];
+          }
+          pathNodes.push(start);
+          return pathNodes.reverse();
+        }
+        if (distances[minNode] === Infinity) break;
+        for (let neighbor in graph[minNode]) {
+          let newDist = distances[minNode] + graph[minNode][neighbor];
+          if (newDist < distances[neighbor]) {
+            distances[neighbor] = newDist;
+            path[neighbor] = minNode;
+          }
+        }
+      }
+      return null;
+    }
+  </script>
+</head>
+<body>
+  <section id="topbar" class="topbar d-flex align-items-center">
+    <div class="container d-flex justify-content-center justify-content-md-between">
+      <div class="contact-info d-flex align-items-center">
+        <i class="bi bi-envelope d-flex align-items-center"><a href="mailto:contact@example.com">contact@patnametro.info</a></i>
+        <i class="bi bi-phone d-flex align-items-center ms-4"><span>+1 5589 55488 55</span></i>
+      </div>
+      <div class="social-links d-none d-md-flex align-items-center">
+        <a href="#" class="twitter"><i class="bi bi-twitter"></i></a>
+        <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
+        <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
+        <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></i></a>
+      </div>
+    </div>
+  </section>
+
+  <header id="header" class="header d-flex align-items-center">
+    <div class="container-fluid container-xl d-flex align-items-center justify-content-between">
+      <a href="index.html" class="logo d-flex align-items-center">
+        <h1>Patna Metro<span>.</span></h1>
+      </a>
+      <i class="mobile-nav-toggle mobile-nav-show bi bi-list"></i>
+      <i class="mobile-nav-toggle mobile-nav-hide d-none bi bi-x"></i>
+    </div>
+  </header>
+
+  <section id="hero" class="hero d-none">
+    <div class="container position-relative">
+      <div class="row gy-5" data-aos="fade-in">
+        <div class="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center text-center text-lg-start">
+          <h2>Welcome to <span>Patna Metro</span></h2>
+          <p>Get Infromation about Routes, First Train, Last Train, Time Duration berween Routes etc.</p>
+          <div class="d-flex justify-content-center justify-content-lg-start">
+            <a href="#about" class="btn-get-started">Check Routes</a>
+            <a href="https://www.youtube.com/watch?v=TSZbuIqzi3w" class="glightbox btn-watch-video d-flex align-items-center"><i class="bi bi-play-circle"></i><span>Watch Video</span></a>
+          </div>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2">
+          <img src="assets/img/hero-img.svg" class="img-fluid" alt="" data-aos="zoom-out" data-aos-delay="100">
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <main id="main">
+    <section id="routes" class="about col-xl-4 col-md-6 px-20 aos-init aos-animate mx-auto">
+      <h4>Find Routes</h4>
+      <form class="bg-light p-4" id="findRoutes">
+        <div class="mb-3">
+          <select id="fromStation" class="form-select" aria-label="Default select example">
+            <option selected>Choose From</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <select id="toStation" class="form-select" aria-label="Default select example">
+            <option selected>Choose To</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+      </form>
+      <p id="info"></p>
+      <ul class="list-group vertical-steps" id="routesList"></ul>
+  </section>
+  <hr/>
+    <section id="about" class="about">
+      <div class="container" data-aos="fade-up">
+        <div class="section-header">
+          <h2>About Us</h2>
+          <p>Our motive is to help people in finding different routes of Patna metro.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer id="footer" class="footer">
+    <div class="container mt-4">
+      <div class="copyright">
+        &copy; Copyright <strong><span>Patna Metro</span></strong>. All Rights Reserved
+      </div>
+      <div class="credits">Designed by <a href="https://bootstrapmade.com/">Patna Metro</a>
+      </div>
+    </div>
+  </footer>
+  <a href="#" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+  <div id="preloader"></div>
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
